@@ -1,23 +1,3 @@
-import os, sys
-
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-
-from matplotlib import cm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-
-import unwrap
-
-import scipy.constants as constants
-
-plt.rcParams.update({'font.size': 14})
-
-
-
-
-base_plotting_directory = os.path.expanduser('~/plots/')
 
 
 ##########################################################################
@@ -59,7 +39,7 @@ def get_simple_ray_tracing_matrix():
 ###########    SELECTING, RE-CASTING, AND NORMALZING DATA    #############
 ##########################################################################
 
-def load_data(path, beam='tot', transmitted=True):
+def load_farfield_data(path, beam='tot', transmitted=True):
     '''
     Loads data saved by the 'compute_far_field.m' MATLAB function, which 
     saves a standard set of data with conventional names to a single 
@@ -524,8 +504,6 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
         plt.show()
 
     return fig, ax
-
-
 
 
 

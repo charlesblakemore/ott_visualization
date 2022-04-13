@@ -5,8 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import matlab.engine
 
-import farfield_plotting
-farfield_plotting.base_plotting_directory = '/home/cblakemore/plots/ott_farfield'
+import lib.ott_plotting as ott_plotting
+ott_plotting.base_plotting_directory = '/home/cblakemore/plots/ott_farfield'
 
 
 
@@ -21,7 +21,7 @@ base_data_path = '../raw_data/'
 ###    e.g. zOffset = +10um corresponds to a microsphere BELOW the focus
 simulation_parameters = {
                   'datapath': base_data_path, \
-                    'radius': 4.35e-6, \
+                    'radius': 3.76e-6, \
                 'n_particle': 1.39, \
                   'n_medium': 1.00, \
                 'wavelength': 1064.0e-9, \
@@ -80,22 +80,24 @@ matlab_datapath \
 ### transmitted and reflected cases separately since they may 
 ### propagate through distinct optical systems
 theta_grid_trans, r_grid_trans, efield_trans\
-    = farfield_plotting.load_data(matlab_datapath, transmitted=True,\
-                                  beam=plot_parameters['beam'])
+    = ott_plotting.load_farfield_data(\
+            matlab_datapath, transmitted=True,\
+            beam=plot_parameters['beam'])
 
 theta_grid_refl, r_grid_refl, efield_refl\
-    = farfield_plotting.load_data(matlab_datapath, transmitted=False,\
-                                  beam=plot_parameters['beam'])
+    = ott_plotting.load_farfield_data(\
+            matlab_datapath, transmitted=False,\
+            beam=plot_parameters['beam'])
 
 
-# ray_tracing = farfield_plotting.ray_tracing_propagation(10.0e-3, 1.0) \
-#                 @ farfield_plotting.ray_tracing_thin_lens(10.0e-3) \
-#                 @ farfield_plotting.ray_tracing_propagation(50.0e-3, 1.0) \
-#                 @ farfield_plotting.ray_tracing_thin_lens(40.8e-3) \
-#                 @ farfield_plotting.ray_tracing_propagation(90.8e-3, 1.0) \
-#                 @ farfield_plotting.ray_tracing_thin_lens(50.8e-3) \
-#                 @ farfield_plotting.ray_tracing_propagation(50.8e-3, 1.0) \
-ray_tracing = farfield_plotting.get_simple_ray_tracing_matrix()
+# ray_tracing = ott_plotting.ray_tracing_propagation(10.0e-3, 1.0) \
+#                 @ ott_plotting.ray_tracing_thin_lens(10.0e-3) \
+#                 @ ott_plotting.ray_tracing_propagation(50.0e-3, 1.0) \
+#                 @ ott_plotting.ray_tracing_thin_lens(40.8e-3) \
+#                 @ ott_plotting.ray_tracing_propagation(90.8e-3, 1.0) \
+#                 @ ott_plotting.ray_tracing_thin_lens(50.8e-3) \
+#                 @ ott_plotting.ray_tracing_propagation(50.8e-3, 1.0) \
+ray_tracing = ott_plotting.get_simple_ray_tracing_matrix()
 
 
 # ### Plot everything!
@@ -106,19 +108,19 @@ if plot_parameters['plot_2D']:
     elif plot_parameters['show']:
         show_2D_fig = True
 
-    farfield_plotting.plot_2D_farfield(
+    ott_plotting.plot_2D_farfield(
         theta_grid_trans, r_grid_trans, efield_trans, simulation_parameters, \
         transmitted=True, ray_tracing_matrix=ray_tracing, \
         **{**plot_parameters, 'show': False})
 
-    farfield_plotting.plot_2D_farfield(
+    ott_plotting.plot_2D_farfield(
         theta_grid_refl, r_grid_refl, efield_refl, simulation_parameters, \
         transmitted=False, ray_tracing_matrix=ray_tracing, \
         **{**plot_parameters, 'show': show_2D_fig})
 
 if plot_parameters['plot_3D']:
-    farfield_plotting.plot_3D_farfield(
+    ott_plotting.plot_3D_farfield(
         theta_grid, r_grid, efield, simulation_parameters, \
-        # ray_tracing_matrix=farfield_plotting.get_simple_ray_tracing_matrix(), \
+        # ray_tracing_matrix=ott_plotting.get_simple_ray_tracing_matrix(), \
         ray_tracing_matrix=ray_tracing, **plot_parameters)
 

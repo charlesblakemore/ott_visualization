@@ -5,8 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import matlab.engine
 
-import farfield_plotting
-farfield_plotting.base_plotting_directory = '/home/cblakemore/plots/ott_farfield'
+import lib.ott_plotting as ott_plotting
+ott_plotting.base_plotting_directory = '/home/cblakemore/plots/ott_farfield'
 
 
 
@@ -108,8 +108,9 @@ for param_ind in tqdm(range(len(param_array))):
 
     ### Load the data that MATLAB computed and saved
     theta_grid, r_grid, efield \
-        = farfield_plotting.load_data(matlab_datapath, beam=beam, \
-                                      transmitted=transmitted)
+        = ott_plotting.load_farfield_data(\
+                    matlab_datapath, beam=beam, \
+                    transmitted=transmitted)
 
     ### Update this label for movie frames
     ms_position = [simulation_parameters['xOffset'], \
@@ -117,9 +118,9 @@ for param_ind in tqdm(range(len(param_array))):
                    simulation_parameters['zOffset']]
 
     ### Plot everything!
-    figname = os.path.join(farfield_plotting.base_plotting_directory, \
+    figname = os.path.join(ott_plotting.base_plotting_directory, \
                            movie_name, f'frame_{param_ind:04d}.png')
-    farfield_plotting.plot_2D_farfield(
+    ott_plotting.plot_2D_farfield(
         theta_grid, r_grid, efield, simulation_paramters, \
         ms_position=ms_position, rmax=rmax, title=title, \
         manual_phase_plot_lims=manual_phase_plot_lims, \
