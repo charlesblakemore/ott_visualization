@@ -10,8 +10,7 @@ function [saveName] = compute_far_field(args)
         args.xOffset double = 0.0e-6
         args.yOffset double = 0.0e-6
         args.zOffset double = 0.0e-6
-        args.thetaMin double = 0.0
-        args.thetaMax double = pi
+        args.halfCone double = pi/2.0
         args.ntheta double = 101
         args.nphi double = 101
         args.Nmax double = 50
@@ -99,16 +98,19 @@ totbeam = sbeam.totalField(ibeam);
 %%% of MS within a trap
 
 %%% Construct the points we want to sample over the full unit sphere
-thetapts = linspace(args.thetaMin, args.thetaMax, args.ntheta);
+thetapts_trans = linspace(0, args.halfCone, args.ntheta);
+thetapts_refl = linspace(pi-args.halfCone, pi, args.ntheta);
 phipts = linspace(0, 2*pi, args.nphi);
 
 %%% Build up a 2x(ntheta*nphi) array of all sampled points since that's
 %%% how the OTT utility function samples the electric field
-farpts = zeros(2, args.ntheta*args.nphi);
+farpts_trans = zeros(2, args.ntheta*args.nphi);
+farpts_refl = zeros(2, args.ntheta*args.nphi);
 for i = 1:args.ntheta
     for k = 1:args.nphi
         ind = (k-1)*args.ntheta + i;
-        farpts(:,ind) = [thetapts(i);phipts(k)];
+        farpts_trans(:,ind) = [thetapts_trans(i);phipts(k)];
+        farpts_refl(:,ind) = [thetapts_refl(i);phipts(k)];
     end
 end
 
@@ -122,9 +124,13 @@ totbeam.basis = 'outgoing';
 
 
 %%% Sample the fieds at the desired points
-[Ei_far, Hi_far] = ibeam.farfield(farpts(1,:),farpts(2,:));
-[Es_far, Hs_far] = sbeam.farfield(farpts(1,:),farpts(2,:));
-[Et_far, Ht_far] = totbeam.farfield(farpts(1,:),farpts(2,:));
+[Ei_trans, Hi_trans] = ibeam.farfield(farpts_trans(1,:),farpts_trans(2,:));
+[Es_trans, Hs_trans] = sbeam.farfield(farpts_trans(1,:),farpts_trans(2,:));
+[Et_trans, Ht_trans] = totbeam.farfield(farpts_trans(1,:),farpts_trans(2,:));
+
+[Ei_refl, Hi_refl] = ibeam.farfield(farpts_refl(1,:),farpts_refl(2,:));
+[Es_refl, Hs_refl] = sbeam.farfield(farpts_refl(1,:),farpts_refl(2,:));
+[Et_refl, Ht_refl] = totbeam.farfield(farpts_refl(1,:),farpts_refl(2,:));
 
 %%% Write all that shit to a few files
 mkdir(saveName);
@@ -132,18 +138,44 @@ disp(' ')
 disp('Writing data to:');
 disp(sprintf('    %s\n', saveName));
 
-formatSpec = '%s/farfield_%s_%s.txt';
+formatSpec = '%s/farfield_%s_%s_%s.txt';
 
-writematrix(farpts, sprintf('%s/farfield_points.txt', saveName));
+writematrix(farpts_trans, ...
+            sprintf('%s/farfield_points_trans.txt', saveName));
 
-writematrix(real(Ei_far), sprintf(formatSpec, saveName, 'inc', 'real'));
-writematrix(imag(Ei_far), sprintf(formatSpec, saveName, 'inc', 'imag'));
+writematrix(real(Ei_trans), sprintf(formatSpec, saveName, ...
+                                    'inc', 'trans', 'real'));
+writematrix(imag(Ei_trans), sprintf(formatSpec, saveName, ...
+                                    'inc', 'trans', 'imag'));
 
-writematrix(real(Es_far), sprintf(formatSpec, saveName, 'scat', 'real'));
-writematrix(imag(Es_far), sprintf(formatSpec, saveName, 'scat', 'imag'));
+writematrix(real(Es_trans), sprintf(formatSpec, saveName, ...
+                                    'scat', 'trans', 'real'));
+writematrix(imag(Es_trans), sprintf(formatSpec, saveName, ...
+                                    'scat', 'trans', 'imag'));
 
-writematrix(real(Et_far), sprintf(formatSpec, saveName, 'tot', 'real'));
-writematrix(imag(Et_far), sprintf(formatSpec, saveName, 'tot', 'imag'));
+writematrix(real(Et_trans), sprintf(formatSpec, saveName, ...
+                                    'tot', 'trans', 'real'));
+writematrix(imag(Et_trans), sprintf(formatSpec, saveName, ...
+                                    'tot', 'trans', 'imag'));
+
+
+writematrix(farpts_refl, ...
+            sprintf('%s/farfield_points_refl.txt', saveName));
+
+writematrix(real(Ei_refl), sprintf(formatSpec, saveName, ...
+                                   'inc', 'refl', 'real'));
+writematrix(imag(Ei_refl), sprintf(formatSpec, saveName, ...
+                                   'inc', 'refl', 'imag'));
+
+writematrix(real(Es_refl), sprintf(formatSpec, saveName, ...
+                                   'scat', 'refl', 'real'));
+writematrix(imag(Es_refl), sprintf(formatSpec, saveName, ...
+                                   'scat', 'refl', 'imag'));
+
+writematrix(real(Et_refl), sprintf(formatSpec, saveName, ...
+                                   'tot', 'refl', 'real'));
+writematrix(imag(Et_refl), sprintf(formatSpec, saveName, ...
+                                  'tot', 'refl', 'imag'));
 
 
 end

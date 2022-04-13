@@ -20,7 +20,6 @@ plt.rcParams.update({'font.size': 14})
 base_plotting_directory = os.path.expanduser('~/plots/')
 
 
-
 ##########################################################################
 #####################   RAY TRACING      #################################
 ##########################################################################
@@ -71,15 +70,23 @@ def load_data(path, beam='tot', transmitted=True):
     if beam not in ['inc', 'scat', 'tot']:
         raise ValueError("Beam type must be of types: 'inc', 'scat', 'tot'")
 
+    if transmitted:
+        trans_str = 'trans'
+    else:
+        trans_str = 'refl'
+
     ### These datafiles should be sampled on a regular (theta, phi) grid for 
     ### this to work properly
-    data_pts = np.loadtxt(os.path.join(path, 'farfield_points.txt'), \
-                          delimiter=',')
+    data_pts = np.loadtxt(\
+        os.path.join(path, f'farfield_points_{trans_str}.txt'), \
+        delimiter=',')
 
-    field_real = np.loadtxt(os.path.join(path, f'farfield_{beam}_real.txt'), \
-                          delimiter=',')
-    field_imag = np.loadtxt(os.path.join(path, f'farfield_{beam}_imag.txt'), \
-                          delimiter=',')
+    field_real = np.loadtxt(\
+        os.path.join(path, f'farfield_{beam}_{trans_str}_real.txt'), \
+        delimiter=',')
+    field_imag = np.loadtxt(\
+        os.path.join(path, f'farfield_{beam}_{trans_str}_imag.txt'), \
+        delimiter=',')
 
     all_theta = data_pts[0]
     all_phi = data_pts[1]
@@ -123,7 +130,7 @@ def load_data(path, beam='tot', transmitted=True):
 
 
 def _project_efield(theta_grid, phi_grid, efield_rtp, polarisation, \
-                    transmitted, unwrap_phase): 
+                    unwrap_phase): 
 
     ### First convert the spherical components of the electric field to
     ### cartesian components to match our usual linearly polarized scheme
@@ -140,12 +147,17 @@ def _project_efield(theta_grid, phi_grid, efield_rtp, polarisation, \
     if unwrap_phase:
         phase = unwrap.unwrap(phase)
 
+    ### Find the row at which theta=r=0, i.e. points along the optical axis
+    ### so the phase can have some sensible origin and be 0 at that origin
+    theta_pts = np.mean(theta_grid, axis=-1)
+    if theta_pts[0] < theta_pts[-1]:
+        center_axis = 0
+    elif theta_pts[0] >= theta_pts[-1]:
+        center_axis = -1
+
     ### Offset the phase map to have 0-phase at the center since it's
     ### arbitrary. Maybe we don't want to do this?
-    if transmitted:
-        center_phase = np.mean(phase[0,:])
-    else:
-        center_phase = np.mean(phase[-1,:])
+    center_phase = np.mean(phase[center_axis,:])
     phase -= center_phase
 
     return radiance, phase
@@ -163,7 +175,7 @@ def _project_efield(theta_grid, phi_grid, efield_rtp, polarisation, \
 
 
 def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
-                     simulation_parameters, title='', \
+                     simulation_parameters, title=True, \
                      max_radiance_val=0.0, \
                      unwrap_phase=True, transmitted=True, \
                      manual_phase_plot_lims=(), \
@@ -171,7 +183,8 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
                      plot_sin_approx_breakdown=False, \
                      ray_tracing_matrix=get_simple_ray_tracing_matrix(), \
                      show=True, save=False, \
-                     figname='', fig_id='', beam=''):
+                     figname='', fig_id='', beam='', \
+                     **kwargs):
 
     polarisation = simulation_parameters['polarisation']
     wavelength = simulation_parameters['wavelength']
@@ -185,7 +198,7 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
         ms_position = None
 
     radiance, phase = _project_efield(theta_grid, phi_grid, efield_rtp, \
-                             polarisation, transmitted, unwrap_phase)
+                                      polarisation, unwrap_phase)
     phase *= phase_sign
 
     ### Correct for sampling the electric field on the wrong farfield 
@@ -202,8 +215,8 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
 
     fig, axarr = plt.subplots(1, 2, figsize=(12,6), sharex=True, sharey=True,\
                                subplot_kw=dict(projection='polar'))
-
     if title:
+        title = _build_title(beam, transmitted)
         fig.suptitle('Image from Output Optics: ' + title, \
                       fontsize=16, fontweight='bold')
 
@@ -360,7 +373,8 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
                      ray_tracing_matrix=get_simple_ray_tracing_matrix(), \
                      view_elev=+40.0, view_azim=20.0, \
                      show=True, save=False, \
-                     figname='', fig_id='', beam=''):
+                     figname='', fig_id='', beam='', \
+                     **kwargs):
 
     polarisation = simulation_parameters['polarisation']
     wavelength = simulation_parameters['wavelength']
@@ -373,20 +387,10 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
     else:
         ms_position = None
 
-    if beam == 'inc':
-        title = 'Incident Gaussian Beam'
-    elif beam == 'scat':
-        title = 'Scattered Beam'
-    else:
-        title = 'Total Beam'
-
-    if transmitted:
-        title += ', Transmitted Hemisphere'
-    else:
-        title += ', Back-reflected Hemisphere'
+    title = _build_title(beam, transmitted)
 
     radiance, phase = _project_efield(theta_grid, phi_grid, efield_rtp, \
-                             polarisation, transmitted, unwrap_phase)
+                                      polarisation, unwrap_phase)
     phase *= phase_sign
 
     ### Correct for sampling the electric field on the wrong farfield 
@@ -588,6 +592,8 @@ def _labelLine(line, x, x_offset=0.0, y_offset=0.0, \
 
 
 
+
+
 def _make_all_pardirs(path, confirm=True):
     '''Function to help pickle from being shit. Takes a path
        and looks at all the parent directories etc and tries 
@@ -620,7 +626,38 @@ def _make_all_pardirs(path, confirm=True):
 
 
 
-def determine_Nmax(offset, Nmax_min=100, Nmax_max=300):
+
+def _build_title(beam, transmitted=True):
+
+    if beam == 'inc':
+        title = 'Incident Gaussian Beam'
+    elif beam == 'scat':
+        title = 'Scattered Beam'
+    else:
+        title = 'Total Beam'
+
+    if transmitted:
+        title += ', Transmitted Hemisphere'
+    else:
+        title += ', Back-reflected Hemisphere'
+
+    return title
+
+
+
+def _determine_Nmax(offset, Nmax_min=100, Nmax_max=300):
     return None
 
 
+
+
+
+
+
+if __name__ == "__main__":
+
+    print('Plots will be saved with the following base path:')
+    print(f'     < {base_plotting_directory} >')
+    print()
+    print('(to change, set the following variable:')
+    print('     ott_plotting.base_plotting_directory  )')
