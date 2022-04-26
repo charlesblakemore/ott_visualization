@@ -8,4 +8,6 @@
 raw_data
 plots
 
+lib/ott_visualization.egg-info
+
 !/.gitignore

@@ -1,3 +1,21 @@
+import os, math, sys
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+
+from matplotlib import cm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
+import unwrap
+
+import scipy.constants as constants
+
+from ott_plotting_util import global_dict
+import ott_plotting_util as util
+
+plt.rcParams.update({'font.size': 14})
 
 
 ##########################################################################
@@ -164,7 +182,15 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
                      ray_tracing_matrix=get_simple_ray_tracing_matrix(), \
                      show=True, save=False, \
                      figname='', fig_id='', beam='', \
-                     **kwargs):
+                     verbose=True, **kwargs):
+
+    if verbose:
+        print()
+        print('Generating 2D plot...')
+        sys.stdout.flush()
+
+    global global_dict
+    base_plotting_directory = global_dict['base_plotting_directory']
 
     polarisation = simulation_parameters['polarisation']
     wavelength = simulation_parameters['wavelength']
@@ -196,7 +222,7 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
     fig, axarr = plt.subplots(1, 2, figsize=(12,6), sharex=True, sharey=True,\
                                subplot_kw=dict(projection='polar'))
     if title:
-        title = _build_title(beam, transmitted)
+        title = util._build_title(beam, transmitted)
         fig.suptitle('Image from Output Optics: ' + title, \
                       fontsize=16, fontweight='bold')
 
@@ -208,7 +234,7 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
         for i in range(2):
             line = axarr[i].plot(derp_phi, derp_r, ls='--', lw=3, \
                                  color='w', zorder=4)
-            _labelLine(axarr[i].get_lines()[0], 3*np.pi/2, \
+            util._labelLine(axarr[i].get_lines()[0], 3*np.pi/2, \
                        y_offset=-0.005, label='$\\pi/6$ half-cone', \
                        va='bottom', zorder=99)
 
@@ -327,10 +353,10 @@ def plot_2D_farfield(theta_grid, phi_grid, efield_rtp, \
                 figname = os.path.join(fig_id, \
                             f'{beam}beam_reflected_output_image.png')
         savepath = os.path.join(base_plotting_directory, figname)
-        print('Saving figure to:')
-        print(f'     {savepath}')
-        print()
-        _make_all_pardirs(savepath,confirm=False)
+        if verbose:
+            print('Saving figure to:')
+            print(f'     {savepath}')
+        util._make_all_pardirs(savepath,confirm=False)
         fig.savefig(savepath, dpi=150)
 
     if show:
@@ -354,7 +380,15 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
                      view_elev=+40.0, view_azim=20.0, \
                      show=True, save=False, \
                      figname='', fig_id='', beam='', \
-                     **kwargs):
+                     verbose=True, **kwargs):
+
+    if verbose:
+        print()
+        print('Generating 3D plot...')
+        sys.stdout.flush()
+
+    global global_dict
+    base_plotting_directory = global_dict['base_plotting_directory']
 
     polarisation = simulation_parameters['polarisation']
     wavelength = simulation_parameters['wavelength']
@@ -367,7 +401,7 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
     else:
         ms_position = None
 
-    title = _build_title(beam, transmitted)
+    title = util._build_title(beam, transmitted)
 
     radiance, phase = _project_efield(theta_grid, phi_grid, efield_rtp, \
                                       polarisation, unwrap_phase)
@@ -494,10 +528,10 @@ def plot_3D_farfield(theta_grid, phi_grid, efield_rtp, \
                 figname = os.path.join(fig_id, \
                             f'{beam}beam_reflected_output_image_3d.png')
         savepath = os.path.join(base_plotting_directory, figname)
-        print('Saving figure to:')
-        print(f'     {savepath}')
-        print()
-        _make_all_pardirs(savepath,confirm=False)
+        if verbose:
+            print('Saving figure to:')
+            print(f'     {savepath}')
+        util._make_all_pardirs(savepath,confirm=False)
         fig.savefig(savepath, dpi=150)
 
     if show:

@@ -15,7 +15,11 @@ function [saveName] = compute_far_field(args)
         args.nphi double = 101
         args.Nmax double = 50
         args.polarisation string = 'X'
+        args.resimulate logical = true
     end
+
+disp(' ');
+disp('Running MATLAB simulation...');
 
 if strcmp(args.datapath, '../raw_data/')
     args.include_id = true;
@@ -45,6 +49,20 @@ if args.include_id
     saveName = strcat(strip(args.datapath,'right','/'), '/', saveName);
 else
     saveName = args.datapath;
+end
+
+%%% Check to see if the data exists yet. Make the folder if not. If yes,
+%%% see whether the user wants to resimulate by examining the args
+if not(isfolder(saveName))
+    if not(args.resimulate)
+        disp("Data doesn't exist to load and you requested NOT to resimulate");
+        return
+    end
+    mkdir(saveName);
+elseif not(args.resimulate)
+    disp("Aborting simulation to load data from path:");
+    disp(sprintf('    %s', saveName));
+    return
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,10 +151,9 @@ totbeam.basis = 'outgoing';
 [Et_refl, Ht_refl] = totbeam.farfield(farpts_refl(1,:),farpts_refl(2,:));
 
 %%% Write all that shit to a few files
-mkdir(saveName);
 disp(' ')
 disp('Writing data to:');
-disp(sprintf('    %s\n', saveName));
+disp(sprintf('    %s', saveName));
 
 formatSpec = '%s/farfield_%s_%s_%s.txt';
 

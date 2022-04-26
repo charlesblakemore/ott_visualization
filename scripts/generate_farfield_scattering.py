@@ -5,8 +5,9 @@ from tqdm import tqdm
 import numpy as np
 import matlab.engine
 
-import lib.ott_plotting as ott_plotting
-ott_plotting.base_plotting_directory = '/home/cblakemore/plots/ott_farfield'
+import ott_plotting
+
+ott_plotting.update_base_plotting_directory('/home/cblakemore/plots/ott_farfield')
 
 
 
@@ -30,10 +31,11 @@ simulation_parameters = {
                    'yOffset': 0.0e-6, \
                    'zOffset': 0.0e-6, \
                   'halfCone': float(np.pi/6), \
-                    'ntheta': 1001, \
-                      'nphi': 1001, \
+                    'ntheta': 501, \
+                      'nphi': 501, \
               'polarisation': 'X', \
-                      'Nmax': 200
+                      'Nmax': 100, \
+                'resimulate': False
 }
 
 
@@ -41,10 +43,10 @@ simulation_parameters = {
 plot_parameters = {
                       'beam': 'tot', \
                       'rmax': 0.004, \
-                      'save': False, \
+                      'save': True, \
                       'show': True, \
                    'plot_2D': True, \
-                   'plot_3D': False, \
+                   'plot_3D': True, \
                  'view_elev': -40.0, \
                  'view_azim': 20.0, \
           'max_radiance_val': 0.0, \
@@ -52,6 +54,9 @@ plot_parameters = {
     'manual_phase_plot_lims': (-2.0*np.pi, 2.0*np.pi)
 }
 
+
+
+plot_parameters['fig_id'] = 'test/derpy'
 
 
 
@@ -71,6 +76,7 @@ arglist = [[key, simulation_parameters[key]] \
 
 ### Start the MATLAB engine and run the computation
 engine = matlab.engine.start_matlab()
+engine.addpath('../lib', nargout=0)
 matlab_datapath \
     = engine.compute_far_field(\
         *[arg for argtup in arglist for arg in argtup], \
@@ -120,7 +126,7 @@ if plot_parameters['plot_2D']:
 
 if plot_parameters['plot_3D']:
     ott_plotting.plot_3D_farfield(
-        theta_grid, r_grid, efield, simulation_parameters, \
+        theta_grid_trans, r_grid_trans, efield_trans, simulation_parameters, \
         # ray_tracing_matrix=ott_plotting.get_simple_ray_tracing_matrix(), \
         ray_tracing_matrix=ray_tracing, **plot_parameters)
 
